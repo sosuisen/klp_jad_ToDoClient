@@ -1,0 +1,59 @@
+/*
+---------------------------------------------------------------------------------------------------
+JavaFX 用のサンプルビルド定義
+モジュール名が myapp
+パッケージ名が com.example
+mainメソッドを含むクラスが com.example.MyApp
+アプリのファイル名がMyAppの場合
+---------------------------------------------------------------------------------------------------
+*/
+plugins {
+  id 'application'
+  id 'eclipse'
+  id 'org.openjfx.javafxplugin' version '0.0.13'
+  id 'org.beryx.jlink' version '2.25.0'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+  implementation 'com.google.code.gson:gson:2.10.1'
+}
+
+compileJava.options.encoding = "UTF-8"
+compileTestJava.options.encoding = "UTF-8"
+
+javafx {
+    version = "19"
+    modules = [ 'javafx.controls', 'javafx.fxml' ]
+}
+
+application {
+    mainModule = 'myapp'
+    mainClass = "com.example.MyApp"
+    if (System.getProperty('DEBUG', 'false') == 'true') {
+    	applicationDefaultJvmArgs = ["-agentlib:jdwp=transport=dt_socket,server=y,address=localhost:5005"]
+    }
+}
+
+eclipse {
+    classpath {
+        file {
+            whenMerged {
+                entries.findAll { it.properties.kind.equals('lib') }.each {
+                    it.entryAttributes['module'] = 'true'
+                }
+            }
+        }
+    }
+}
+
+jlink {
+    options = ['--strip-debug', '--compress', '2', '--no-header-files', '--no-man-pages']
+    launcher {
+        // アプリのファイル名
+        name = 'MyApp'
+    }
+}
