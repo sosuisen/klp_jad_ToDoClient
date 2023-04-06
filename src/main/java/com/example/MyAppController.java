@@ -31,6 +31,14 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
 public class MyAppController {
+	/**
+	 * プロジェクトフォルダに config.json が必要。
+	 * ToDoServer側の認証に必要なユーザ名とパスワードを指定します。
+	 * ﻿{
+	 * "user": "admin",
+  	 * "pass": "foobar"
+  	 * }
+	 */
 	private String path = "config.json";
 
 	private DAO dao;
