@@ -1,9 +1,14 @@
 package com.example;
 
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
+
+import com.google.gson.Gson;
 
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -26,7 +31,9 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
 public class MyAppController {
-	private final DAO dao = new DAO("http://localhost:8080/ToDoServer");
+	private String path = "config.json";
+
+	private DAO dao;
 
 	private final String TODO_COMPLETED = "完了";
 	private final String TODO_TITLE = "タイトル";
@@ -132,6 +139,13 @@ public class MyAppController {
 		dialog.showAndWait();
 	}
 
+	private void showError(String txt) {
+		Alert dialog = new Alert(AlertType.ERROR);
+		dialog.setHeaderText(null);
+		dialog.setContentText(txt);
+		dialog.showAndWait();
+	}
+
 	private void sort(String type, String order) {
 		Comparator<Node> comp = null;
 		switch (type) {
@@ -156,6 +170,32 @@ public class MyAppController {
 	}
 
 	public void initialize() {
+		try {
+			var configJson = Files.readString(Path.of(path));
+			// ここでの変換のためにしか使わない単純なクラスなので、Recordで定義しています。
+			record Config(String user, String pass) {
+			}
+			;
+			var configObj = new Gson().fromJson(configJson, Config.class);
+			if (configObj.user == null) {
+				showError("設定ファイルにuserプロパティがありません");
+				Platform.exit();
+			}
+			if (configObj.pass == null) {
+				showError("設定ファイルにpassプロパティがありません");
+				Platform.exit();
+			}
+			dao = new DAO("http://localhost:8080/ToDoServer", configObj.user, configObj.pass);
+		} catch (NoSuchFileException err) {
+			err.printStackTrace();
+			showError("設定ファイル%sが必要です。".formatted(Path.of(path).toAbsolutePath()));
+			Platform.exit();
+		} catch (Exception err) {
+			err.printStackTrace();
+			showError("設定ファイルのJSON形式が不正です。");
+			Platform.exit();
+		}
+
 		sortTypeMenu.getItems().addAll(MENU.keySet());
 		sortTypeMenu.setValue(TODO_DATE);
 		sortTypeMenu.getSelectionModel().selectedItemProperty()

@@ -1,6 +1,8 @@
 package com.example;
 
 import java.lang.reflect.Type;
+import java.net.Authenticator;
+import java.net.PasswordAuthentication;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -15,13 +17,24 @@ import com.google.gson.reflect.TypeToken;
  */
 public class DAO {
 	private String url;
-	private HttpClient client = HttpClient.newHttpClient();
+	private HttpClient client;
+
 	private Gson gson = new Gson();
 	private Type todosType = new TypeToken<ArrayList<ToDo>>() {
 	}.getType();
 
-	public DAO(String url) {
+	public DAO(String url, String user, String pass) {
 		this.url = url;
+		
+		// Basic認証を利用
+		this.client = HttpClient.newBuilder()
+				  .authenticator(new Authenticator() {
+				      @Override
+				      protected PasswordAuthentication getPasswordAuthentication() {
+				          return new PasswordAuthentication(user, pass.toCharArray());
+				      }
+				  })
+				  .build(); 
 	}
 
 	public ToDo get(int id) {
