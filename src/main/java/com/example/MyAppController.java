@@ -26,7 +26,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
 public class MyAppController {
-	private final DAO dao = new DAO("http://localhost:8080/kcg_jad_ToDoServer");
+	private final DAO dao = new DAO("http://localhost:8080/ToDoServer");
 
 	private final String TODO_COMPLETED = "完了";
 	private final String TODO_TITLE = "タイトル";
