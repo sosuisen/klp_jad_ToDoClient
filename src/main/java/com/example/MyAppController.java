@@ -181,19 +181,17 @@ public class MyAppController {
 		try {
 			var configJson = Files.readString(Path.of(path));
 			// ここでの変換のためにしか使わない単純なクラスなので、Recordで定義しています。
-			record Config(String user, String pass) {
-			}
-			;
+			record Config(String user, String pass) {};
 			var configObj = new Gson().fromJson(configJson, Config.class);
-			if (configObj.user == null) {
+			if (configObj.user() == null) {
 				showError("設定ファイルにuserプロパティがありません");
 				Platform.exit();
 			}
-			if (configObj.pass == null) {
+			if (configObj.pass() == null) {
 				showError("設定ファイルにpassプロパティがありません");
 				Platform.exit();
 			}
-			dao = new DAO("http://localhost:8080/ToDoServer", configObj.user, configObj.pass);
+			dao = new DAO("http://localhost:8080/ToDoServer", configObj.user(), configObj.pass());
 		} catch (NoSuchFileException err) {
 			err.printStackTrace();
 			showError("設定ファイル%sが必要です。".formatted(Path.of(path).toAbsolutePath()));
