@@ -5,6 +5,8 @@ import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
 
+import com.example.exceptions.AuthenticationFailedException;
+import com.example.exceptions.AuthorizationFailedException;
 import com.example.exceptions.InternalServerErrorException;
 import com.example.model.ToDo;
 import com.example.model.ToDoManager;
@@ -71,15 +73,13 @@ public class MainController {
 		}
 
 		String txt = switch (e) {
-			case IOException ioe -> "サーバからデータを受信できませんでした。ネットワークを確認してからもう一度お試しください。("
-					+ ioe.toString() + ")";
-			case InterruptedException ie -> "サーバとの通信が中断されました。しばらく待ってからもう一度お試しください。("
-					+ ie.toString() + ")";
-			case InternalServerErrorException isee -> "サーバで問題が発生しました。サーバ管理者にお問い合わせください。(" 
-				+ isee.toString() + ")";
+			case IOException ioe -> "サーバからデータを受信できませんでした。ネットワークを確認してからもう一度お試しください。";
+			case InterruptedException ie -> "サーバとの通信が中断されました。しばらく待ってからもう一度お試しください。";
+			case InternalServerErrorException isee -> "サーバで問題が発生しました。サーバ管理者にお問い合わせください。";
+			case AuthenticationFailedException afe -> "ユーザ名またはパスワードが間違っています。";
+			case AuthorizationFailedException aze -> "この操作をする権限がありません。";
 			default -> "予期しないエラーが発生しました。(" + e.toString()+ ")";
 		};
-		
 		e.printStackTrace();
 		
 		var dialog = new Alert(AlertType.ERROR);

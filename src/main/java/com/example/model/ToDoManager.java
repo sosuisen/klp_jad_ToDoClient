@@ -7,6 +7,8 @@ import java.time.LocalDate;
 
 import org.hildan.fxgson.FxGsonBuilder;
 
+import com.example.exceptions.AuthenticationFailedException;
+import com.example.exceptions.AuthorizationFailedException;
 import com.example.exceptions.InternalServerErrorException;
 import com.google.gson.JsonSyntaxException;
 
@@ -32,12 +34,18 @@ public class ToDoManager {
 		service = new ToDoService(config.rootEndPoint);
 	}
 
-	public void remove(ToDo todo) throws IOException, InterruptedException, InternalServerErrorException {
+	public void remove(ToDo todo)
+			throws IOException, InterruptedException, InternalServerErrorException,
+			AuthorizationFailedException, AuthenticationFailedException {
+
 		service.delete(todo.getId());
 		todos.remove(todo);
 	}
 
-	public void clear() throws IOException, InterruptedException, InternalServerErrorException {
+	public void clear() 
+			throws IOException, InterruptedException, InternalServerErrorException,
+			AuthorizationFailedException, AuthenticationFailedException {
+
 		service.deleteAll();
 		todos.clear();
 	}
@@ -82,15 +90,12 @@ public class ToDoManager {
 		});
 	}
 
-	public void create(String title, LocalDate date, int priority, boolean completed) throws IOException, InterruptedException, InternalServerErrorException {
-		int newId = 0;
-		if (todos.size() > 0)
-			newId = todos.stream().max((todo1, todo2) -> todo1.getId() - todo2.getId()).get().getId() + 1;
+	public void create(String title, LocalDate date, int priority, boolean completed)
+			throws IOException, InterruptedException, InternalServerErrorException,
+			AuthorizationFailedException, AuthenticationFailedException {
 
 		var todo = service.create(title, date, priority, completed);
 		addNewToDo(todo);
-
-		System.out.println("Added #" + newId);
 	}
 
 	private void addNewToDo(ToDo todo) {
@@ -98,7 +103,10 @@ public class ToDoManager {
 		todos.add(todo);
 	}
 
-	public void loadInitialData() throws IOException, InterruptedException, InternalServerErrorException {
+	public void loadInitialData()
+			throws IOException, InterruptedException, InternalServerErrorException,
+			AuthorizationFailedException, AuthenticationFailedException {
+
 		service.getAll().forEach(todo -> addNewToDo(todo));	
 	}
 }

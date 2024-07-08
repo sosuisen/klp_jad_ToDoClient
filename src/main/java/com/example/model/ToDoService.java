@@ -12,6 +12,8 @@ import java.util.logging.Logger;
 import org.hildan.fxgson.FxGson;
 
 import com.example.AuthDialogController;
+import com.example.exceptions.AuthenticationFailedException;
+import com.example.exceptions.AuthorizationFailedException;
 import com.example.exceptions.InternalServerErrorException;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
@@ -37,7 +39,7 @@ public class ToDoService {
 
 	private Dialog<Boolean> authDialog = new Dialog<>();
 	private AuthDialogController controller;
-	
+
 	public ToDoService(String rootEndPoint) throws IOException {
 		this.rootEndPoint = rootEndPoint;
 
@@ -73,129 +75,127 @@ public class ToDoService {
 				.encodeToString((userName.get() + ":" + password.get()).getBytes());
 	}
 
-	public List<ToDo> getAll() throws IOException, InterruptedException, InternalServerErrorException {
-		HttpResponse<String> res;
-		do {
-			var request = HttpRequest.newBuilder()
-					.uri(URI.create(rootEndPoint + "/todos"))
-					.header("Authorization", getBasicAuthHeader()) // Basic認証
-					.build();
+	private HttpResponse<String> sendRequest(int successCode, HttpRequest.Builder builder)
+			throws InternalServerErrorException, IOException, InterruptedException, AuthorizationFailedException, AuthenticationFailedException {
+		while (true) {
+			var req = builder.header("Authorization", getBasicAuthHeader()).build();
 
-			res = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-			var authExists = true;
-			if (res.statusCode() == 401 || res.statusCode() == 403) { 
-				authExists = openAuthDialog(res.statusCode());
-			} else if (res.statusCode() != 200) {
+			HttpResponse<String> res = httpClient.send(req, HttpResponse.BodyHandlers.ofString());
+
+			if (res.statusCode() == 401) {
+				if (!openAuthDialog(res.statusCode())) {
+					throw new AuthenticationFailedException();
+				}
+			}
+			else if (res.statusCode() == 403) {
+				if (!openAuthDialog(res.statusCode())) {
+					throw new AuthorizationFailedException();
+				}
+			} else if (res.statusCode() != successCode) {
 				logger.severe("Failed to get all todos: " + res.body());
 				throw new InternalServerErrorException();
+			} else {
+				return res;
 			}
-			
-			if (!authExists) {
-				return List.of();
-			}
-		} while (res.statusCode() != 200);
-
-		record GetResult(List<ToDo> todos, String error) {
 		}
-		List<ToDo> todos;
+	}
+
+	public List<ToDo> getAll()
+			throws IOException, InterruptedException, InternalServerErrorException,
+			AuthorizationFailedException, AuthenticationFailedException {
+
+		var builder = HttpRequest.newBuilder()
+				.uri(URI.create(rootEndPoint + "/todos"));
+		HttpResponse<String> res = sendRequest(200, builder);
+		
+		record GetResult(List<ToDo> todos, String error) {}
 		try {
-			todos = gson.fromJson(res.body(), GetResult.class).todos();
+			return gson.fromJson(res.body(), GetResult.class).todos();
 		} catch (JsonSyntaxException e) {
 			logger.severe("Failed to parse the response: " + res.body());
 			throw new InternalServerErrorException();
 		}
-		return todos;
 	}
 
 	public ToDo create(String title, LocalDate date, int priority, boolean completed)
-			throws IOException, InterruptedException, InternalServerErrorException {
-		record PostParams(String title, LocalDate date, int priority, boolean completed) {
-		}
-		var request = HttpRequest.newBuilder()
+			throws IOException, InterruptedException, InternalServerErrorException,
+			AuthorizationFailedException, AuthenticationFailedException {
+
+		record PostParams(String title, LocalDate date, int priority, boolean completed) {}
+		var json = gson.toJson(new PostParams(title, date, priority, completed));
+		var builder = HttpRequest.newBuilder()
 				.uri(URI.create(rootEndPoint + "/todos"))
 				.header("Content-Type", "application/json")
-				.header("Authorization", getBasicAuthHeader())
-				.POST(HttpRequest.BodyPublishers
-						.ofString(gson.toJson(new PostParams(title, date, priority, completed))))
-				.build();
-		HttpResponse<String> res = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-		if (res.statusCode() != 201) {
-			logger.severe("Failed to create a new todo: " + res.body());
-			throw new InternalServerErrorException();
-		}
-		record PostResult(ToDo todo, String error) {
-		}
-		ToDo todo;
+				.POST(HttpRequest.BodyPublishers.ofString(json));
+		HttpResponse<String> res = sendRequest(201, builder);
+
+		record PostResult(ToDo todo, String error) {}
 		try {
-			todo = gson.fromJson(res.body(), PostResult.class).todo();
+			return gson.fromJson(res.body(), PostResult.class).todo();
 		} catch (JsonSyntaxException e) {
 			logger.severe("Failed to parse the response: " + res.body());
 			throw new InternalServerErrorException();
 		}
-		return todo;
 	}
 
-	public void delete(int id) throws IOException, InterruptedException, InternalServerErrorException {
-		var request = HttpRequest.newBuilder()
+	public void delete(int id)
+			throws IOException, InterruptedException, InternalServerErrorException,
+			AuthorizationFailedException, AuthenticationFailedException {
+
+		var builder = HttpRequest.newBuilder()
 				.uri(URI.create(rootEndPoint + "/todos/" + id))
-				.header("Authorization", getBasicAuthHeader())
-				.DELETE()
-				.build();
-		HttpResponse<String> res = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-		if (res.statusCode() != 200) {
-			logger.severe("Failed to delete a todo: " + res.body());
-			throw new InternalServerErrorException();
-		}
+				.DELETE();
+		sendRequest(200, builder);
 	}
 
-	public void deleteAll() throws IOException, InterruptedException, InternalServerErrorException {
-		var request = HttpRequest.newBuilder()
+	public void deleteAll() 
+			throws IOException, InterruptedException, InternalServerErrorException,
+			AuthorizationFailedException, AuthenticationFailedException {
+
+		var builder = HttpRequest.newBuilder()
 				.uri(URI.create(rootEndPoint + "/todos"))
-				.header("Authorization", getBasicAuthHeader())
-				.DELETE()
-				.build();
-		HttpResponse<String> res = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-		if (res.statusCode() != 200) {
-			logger.severe("Failed to delete all todos: " + res.body());
-			throw new InternalServerErrorException();
-		}
+				.DELETE();
+		sendRequest(200, builder);
 	}
 
 	private void updateField(int id, String fieldName, String json)
-			throws IOException, InterruptedException, InternalServerErrorException {
+			throws IOException, InterruptedException, InternalServerErrorException,
+			AuthorizationFailedException, AuthenticationFailedException {
+
 		var request = HttpRequest.newBuilder()
 				.uri(URI.create(rootEndPoint + "/todos/" + id + "/" + fieldName))
 				.header("Content-Type", "application/json")
-				.header("Authorization", getBasicAuthHeader())
-				.PUT(HttpRequest.BodyPublishers.ofString(json))
-				.build();
-		HttpResponse<String> res = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-		if (res.statusCode() != 200) {
-			logger.severe("Failed to update a todo: " + res.body());
-			throw new InternalServerErrorException();
-		}
+				.PUT(HttpRequest.BodyPublishers.ofString(json));
+		sendRequest(200, request);		
 	}
 
 	public void updateTitle(int id, String title)
-			throws IOException, InterruptedException, InternalServerErrorException {
+			throws IOException, InterruptedException, InternalServerErrorException,
+			AuthorizationFailedException, AuthenticationFailedException {
 		record Param(String title) {}
 		updateField(id, "title", gson.toJson(new Param(title)));
 	}
 
 	public void updateDate(int id, LocalDate date)
-			throws IOException, InterruptedException, InternalServerErrorException {
+			throws IOException, InterruptedException, InternalServerErrorException,
+			AuthorizationFailedException, AuthenticationFailedException {
+
 		record Param(String date) {}
 		updateField(id, "date", gson.toJson(new Param(date.toString())));
 	}
 
 	public void updatePriority(int id, int priority)
-			throws IOException, InterruptedException, InternalServerErrorException {
+			throws IOException, InterruptedException, InternalServerErrorException,
+			AuthorizationFailedException, AuthenticationFailedException {
+
 		record Param(int priority) {}
 		updateField(id, "priority", gson.toJson(new Param(priority)));
 	}
 
 	public void updateCompleted(int id, boolean completed)
-			throws IOException, InterruptedException, InternalServerErrorException {
+			throws IOException, InterruptedException, InternalServerErrorException,
+			AuthorizationFailedException, AuthenticationFailedException {
+
 		record Param(boolean completed) {}
 		updateField(id, "completed", gson.toJson(new Param(completed)));
 	}
