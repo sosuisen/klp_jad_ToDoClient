@@ -20,12 +20,7 @@ public class ToDoService {
 	private final HttpClient httpClient = HttpClient.newHttpClient();
 	private final Gson gson = new FxGsonBuilder().create();
 	private final Logger logger = Logger.getLogger(ToDoService.class.getName());
-	
-	public record GetResult(List<ToDo> todos, String error) {}
-	public record PostResult(ToDo todo, String error) {}
-	public record PutResult(ToDo todo, String error) {}
-	public record DeleteResult(int id, String error) {}
-
+		
 	private ToDoService(String rootEndPoint) {
 		this.rootEndPoint = rootEndPoint;
 	}
@@ -50,6 +45,7 @@ public class ToDoService {
 			logger.severe("Failed to get all todos: " + res.body());
 			throw new InternalServerErrorException();
 		}
+		record GetResult(List<ToDo> todos, String error) {}
 		List<ToDo> todos;
 		try {
 			todos = gson.fromJson(res.body(), GetResult.class).todos();
@@ -72,6 +68,7 @@ public class ToDoService {
 			logger.severe("Failed to create a new todo: " + res.body());
 			throw new InternalServerErrorException();
 		}
+		record PostResult(ToDo todo, String error) {}
 		ToDo todo;
 		try {
 			todo = gson.fromJson(res.body(), PostResult.class).todo();
