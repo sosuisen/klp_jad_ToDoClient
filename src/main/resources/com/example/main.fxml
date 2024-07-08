@@ -1,12 +1,53 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.scene.control.Button?>
-<?import javafx.scene.control.TextArea?>
-<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.control.ChoiceBox?>
+<?import javafx.scene.control.DatePicker?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Menu?>
+<?import javafx.scene.control.MenuBar?>
+<?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
 
-<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="361.0" stylesheets="@styles.css" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.MainController">
-   <children>
-      <TextArea fx:id="textArea" layoutX="26.0" layoutY="36.0" prefHeight="234.0" prefWidth="309.0" />
-      <Button fx:id="saveButton" layoutX="242.0" layoutY="307.0" mnemonicParsing="false" text="Save" />
-   </children>
-</AnchorPane>
+<VBox id="root-vbox" prefHeight="403.0" prefWidth="450.0" stylesheets="@styles.css" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.MainController">
+	<children>
+		<MenuBar>
+			<menus>
+				<Menu text="File">
+					<items>
+                  		<MenuItem fx:id="menuItemClear" mnemonicParsing="false" text="Clear All ToDos" />
+						<MenuItem fx:id="menuItemClose" text="Close" />
+					</items>
+				</Menu>
+				<Menu text="Help">
+					<items>
+						<MenuItem fx:id="menuItemAbout" text="About" />
+					</items>
+				</Menu>
+			</menus>
+		</MenuBar>
+		<HBox id="header">
+			<children>
+				<Label minWidth="-Infinity" styleClass="header-label" text="ToDo">
+				</Label>
+				<TextField fx:id="headerTitleField" HBox.hgrow="ALWAYS">
+				</TextField>
+				<Label minWidth="-Infinity" styleClass="header-label" text="日付">
+				</Label>
+				<DatePicker fx:id="headerDatePicker" prefWidth="100.0" HBox.hgrow="NEVER">
+				</DatePicker>
+            <ChoiceBox fx:id="headerPriorityChoiceBox" prefHeight="23.0" prefWidth="30.0" />
+				<Button fx:id="addBtn" minWidth="-Infinity" mnemonicParsing="false" text="追加">
+				</Button>
+			</children>
+		</HBox>
+      <ScrollPane fx:id="scrollPane" fitToWidth="true">
+         <content>
+      		<VBox fx:id="todoListVBox" />
+         </content>
+      </ScrollPane>
+	</children>
+</VBox>

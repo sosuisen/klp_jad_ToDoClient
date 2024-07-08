@@ -9,25 +9,44 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.logging.Logger;
 
-import org.hildan.fxgson.FxGsonBuilder;
+import org.hildan.fxgson.FxGson;
 
 import com.example.exceptions.InternalServerErrorException;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
+
 public class ToDoService {
 	private final String rootEndPoint;
 	private final HttpClient httpClient = HttpClient.newHttpClient();
-	private final Gson gson = new FxGsonBuilder().create();
+	private final Gson gson = FxGson.coreBuilder()
+			.registerTypeAdapter(LocalDate.class, new LocalDateAdapter())
+			.create();
+
 	private final Logger logger = Logger.getLogger(ToDoService.class.getName());
 		
+	public StringProperty userName = new SimpleStringProperty();
+	public StringProperty password = new SimpleStringProperty();
+	
 	public ToDoService(String rootEndPoint) {
 		this.rootEndPoint = rootEndPoint;
+		
+		userName.set("admin");
+		password.set("foo");
+	}
+	
+	private String getBasicAuthHeader() {
+		return "Basic " + java.util.Base64.getEncoder()
+                .encodeToString((userName.get() + ":" + password.get()).getBytes());
 	}
 
 	public List<ToDo> getAll() throws IOException, InterruptedException, InternalServerErrorException {
+		// Basic認証
 		var request = HttpRequest.newBuilder()
 				.uri(URI.create(rootEndPoint + "/todos"))
+				.header("Authorization", getBasicAuthHeader())
 				.build();
 		HttpResponse<String> res = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 		if (res.statusCode() != 200) {
@@ -50,6 +69,7 @@ public class ToDoService {
 		var request = HttpRequest.newBuilder()
 				.uri(URI.create(rootEndPoint + "/todos"))
 				.header("Content-Type", "application/json")
+				.header("Authorization", getBasicAuthHeader())
 				.POST(HttpRequest.BodyPublishers.ofString(gson.toJson(new PostParams(title, date, priority, completed))))
 				.build();
 		HttpResponse<String> res = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
@@ -71,6 +91,7 @@ public class ToDoService {
 	public void delete(int id) throws IOException, InterruptedException, InternalServerErrorException {
 		var request = HttpRequest.newBuilder()
 				.uri(URI.create(rootEndPoint + "/todos/" + id))
+				.header("Authorization", getBasicAuthHeader())
 				.DELETE()
 				.build();
 		HttpResponse<String> res = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
@@ -83,6 +104,7 @@ public class ToDoService {
 	public void deleteAll() throws IOException, InterruptedException, InternalServerErrorException {
 		var request = HttpRequest.newBuilder()
 				.uri(URI.create(rootEndPoint + "/todos"))
+				.header("Authorization", getBasicAuthHeader())
 				.DELETE()
 				.build();
 		HttpResponse<String> res = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
@@ -96,6 +118,7 @@ public class ToDoService {
         var request = HttpRequest.newBuilder()
                 .uri(URI.create(rootEndPoint + "/todos/" + id + "/" + fieldName))
                 .header("Content-Type", "application/json")
+				.header("Authorization", getBasicAuthHeader())
                 .PUT(HttpRequest.BodyPublishers.ofString(json))
                 .build();
         HttpResponse<String> res = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
@@ -112,16 +135,16 @@ public class ToDoService {
 
 	public void updateDate(int id, LocalDate date) throws IOException, InterruptedException, InternalServerErrorException {
 		record Param(String date) {}
-		updateField(id, "title", gson.toJson(new Param(date.toString())));
+		updateField(id, "date", gson.toJson(new Param(date.toString())));
 	}
 
 	public void updatePriority(int id, int priority) throws IOException, InterruptedException, InternalServerErrorException {
 		record Param(int priority) {}
-		updateField(id, "title", gson.toJson(new Param(priority)));
+		updateField(id, "priority", gson.toJson(new Param(priority)));
 	}
 
 	public void updateCompleted(int id, boolean completed) throws IOException, InterruptedException, InternalServerErrorException {
 		record Param(boolean completed) {}
-		updateField(id, "title", gson.toJson(new Param(completed)));
+		updateField(id, "completed", gson.toJson(new Param(completed)));
 	}
 }

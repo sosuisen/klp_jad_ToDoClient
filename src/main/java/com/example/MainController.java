@@ -80,6 +80,8 @@ public class MainController {
 			default -> "予期しないエラーが発生しました。(" + e.toString()+ ")";
 		};
 		
+		e.printStackTrace();
+		
 		var dialog = new Alert(AlertType.ERROR);
 		dialog.setTitle("エラー");
 		dialog.setHeaderText(null);

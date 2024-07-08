@@ -82,21 +82,23 @@ public class ToDoManager {
 		});
 	}
 
-	public void create(String title, LocalDate date, int priority, boolean completed) throws JsonSyntaxException, IOException, InterruptedException, InternalServerErrorException {
+	public void create(String title, LocalDate date, int priority, boolean completed) throws IOException, InterruptedException, InternalServerErrorException {
 		int newId = 0;
 		if (todos.size() > 0)
 			newId = todos.stream().max((todo1, todo2) -> todo1.getId() - todo2.getId()).get().getId() + 1;
 
-		addNewToDo(newId, title, date, priority, completed);
+		var todo = service.create(title, date, priority, completed);
+		addNewToDo(todo);
+
+		System.out.println("Added #" + newId);
 	}
 
-	private void addNewToDo(int id, String title, LocalDate date, int priority, boolean completed) throws JsonSyntaxException, IOException, InterruptedException, InternalServerErrorException {
-		var todo = service.create(title, date, priority, completed);
+	private void addNewToDo(ToDo todo) {
 		addListener(todo);
 		todos.add(todo);
 	}
 
-	public void loadInitialData() throws JsonSyntaxException, IOException, InterruptedException, InternalServerErrorException {
-		todos.addAll(service.getAll());
+	public void loadInitialData() throws IOException, InterruptedException, InternalServerErrorException {
+		service.getAll().forEach(todo -> addNewToDo(todo));	
 	}
 }
