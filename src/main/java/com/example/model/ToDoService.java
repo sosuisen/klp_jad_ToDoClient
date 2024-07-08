@@ -21,8 +21,6 @@ import javafx.beans.property.StringProperty;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Dialog;
-import javafx.scene.layout.AnchorPane;
-import javafx.util.Pair;
 
 public class ToDoService {
 	private final String rootEndPoint;
@@ -35,54 +33,39 @@ public class ToDoService {
 
 	public StringProperty userName = new SimpleStringProperty();
 	public StringProperty password = new SimpleStringProperty();
+	public StringProperty authError = new SimpleStringProperty();
 
-	private Dialog<Pair<String, String>> authDialog = new Dialog<>();
+	private Dialog<Boolean> authDialog = new Dialog<>();
 	private AuthDialogController controller;
 	
 	public ToDoService(String rootEndPoint) throws IOException {
 		this.rootEndPoint = rootEndPoint;
-		
-		// 認証ダイアログを作成
-		var loader = new FXMLLoader(getClass().getResource("/com/example/auth_dialog.fxml"));
-		AnchorPane anchorPane = loader.load(); 
 
-		// コントローラを取得
-		controller = loader.getController();
-
-		// ダイアログの作成
+		// Config auth dialog
 		authDialog.setTitle("Your account");
 		authDialog.setHeaderText("Please enter your username and password");
-
-		// OKおよびCancelボタンを追加
+		// Buttons
 		authDialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+		authDialog.setResultConverter(buttonType -> buttonType == ButtonType.OK);
 
-		// ダイアログにFXMLの内容をセット
-		authDialog.getDialogPane().setContent(anchorPane);
+		// Load inner FXML
+		var loader = new FXMLLoader(getClass().getResource("/com/example/auth_dialog.fxml"));
+		authDialog.getDialogPane().setContent(loader.load());
 
-		// ダイアログの結果を処理
-		authDialog.setResultConverter(dialogButton -> {
-			if (dialogButton == ButtonType.OK) {
-				return new Pair<>(controller.getUsername(), controller.getPassword());
-			}
-			return null;
-		});
+		// Initialize controller for auth dialog
+		controller = loader.getController();
+		controller.initModel(this);
 	}
 
 	private boolean openAuthDialog(int statusCode) {
 		if (statusCode == 401) {
-			controller.setError("Invalid username or password");
+			authError.set("Invalid username or password");
 		} else if (statusCode == 403) {
-			controller.setError("Access denied");
+			authError.set("Access denied");
 		}
 
-		// 認証ダイアログを表示して結果を取得
 		var result = authDialog.showAndWait();
-		if (result.isEmpty()) {
-			return false;
-		}
-		userName.set(result.get().getKey());
-		password.set(result.get().getValue());
-		return true;
+		return result.get();
 	}
 
 	private String getBasicAuthHeader() {
@@ -195,29 +178,25 @@ public class ToDoService {
 
 	public void updateTitle(int id, String title)
 			throws IOException, InterruptedException, InternalServerErrorException {
-		record Param(String title) {
-		}
+		record Param(String title) {}
 		updateField(id, "title", gson.toJson(new Param(title)));
 	}
 
 	public void updateDate(int id, LocalDate date)
 			throws IOException, InterruptedException, InternalServerErrorException {
-		record Param(String date) {
-		}
+		record Param(String date) {}
 		updateField(id, "date", gson.toJson(new Param(date.toString())));
 	}
 
 	public void updatePriority(int id, int priority)
 			throws IOException, InterruptedException, InternalServerErrorException {
-		record Param(int priority) {
-		}
+		record Param(int priority) {}
 		updateField(id, "priority", gson.toJson(new Param(priority)));
 	}
 
 	public void updateCompleted(int id, boolean completed)
 			throws IOException, InterruptedException, InternalServerErrorException {
-		record Param(boolean completed) {
-		}
+		record Param(boolean completed) {}
 		updateField(id, "completed", gson.toJson(new Param(completed)));
 	}
 }

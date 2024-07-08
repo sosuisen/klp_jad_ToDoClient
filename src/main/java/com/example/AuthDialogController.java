@@ -1,5 +1,7 @@
 package com.example;
 
+import com.example.model.ToDoService;
+
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
@@ -15,15 +17,16 @@ public class AuthDialogController {
     @FXML
     private Label errorLabel;
 
-	public String getUsername() {
-		return usernameField.getText();
-	}
+	private ToDoService model;
 	
-	public String getPassword() {
-		return passwordField.getText();
+	public void initModel(ToDoService service) {
+		if (this.model != null)
+			throw new IllegalStateException("Model can only be initialized once");
+
+		model = service;
+
+		usernameField.textProperty().bindBidirectional(model.userName);
+		passwordField.textProperty().bindBidirectional(model.password);
+		errorLabel.textProperty().bind(model.authError);
 	}
-	
-	public void setError(String message) {
-        errorLabel.setText(message);
-    }
 }
