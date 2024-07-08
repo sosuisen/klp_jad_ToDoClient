@@ -29,7 +29,7 @@ public class ToDoManager {
 		var gson = new FxGsonBuilder().create();
 		record Config(String rootEndPoint) {}
 		var config = gson.fromJson(Files.readString(Path.of(configPath)), Config.class);
-		service = ToDoService.getInstance(config.rootEndPoint);
+		service = new ToDoService(config.rootEndPoint);
 	}
 
 	public void remove(ToDo todo) throws IOException, InterruptedException, InternalServerErrorException {

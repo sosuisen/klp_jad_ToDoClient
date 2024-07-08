@@ -21,19 +21,8 @@ public class ToDoService {
 	private final Gson gson = new FxGsonBuilder().create();
 	private final Logger logger = Logger.getLogger(ToDoService.class.getName());
 		
-	private ToDoService(String rootEndPoint) {
+	public ToDoService(String rootEndPoint) {
 		this.rootEndPoint = rootEndPoint;
-	}
-
-	private static class SingletonHolder {
-		private static ToDoService singleton;
-	}
-
-	public static ToDoService getInstance(String rootEndPoint) {
-		if (SingletonHolder.singleton == null) {
-			SingletonHolder.singleton = new ToDoService(rootEndPoint);
-		}
-		return SingletonHolder.singleton;
 	}
 
 	public List<ToDo> getAll() throws IOException, InterruptedException, InternalServerErrorException {
