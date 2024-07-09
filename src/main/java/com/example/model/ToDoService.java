@@ -27,7 +27,7 @@ public class ToDoService {
 	private final HttpClient httpClient = HttpClient.newHttpClient();
 	private final Logger logger = Logger.getLogger(ToDoService.class.getName());	
 	private final Gson gson = FxGson.coreBuilder()
-			.registerTypeAdapter(LocalDate.class, new LocalDateAdapter())
+			.registerTypeAdapter(LocalDate.class, new LocalDateAdapter()) //Gson needed an adapter to convert LocalDate
 			.create();
 	private Dialog<Boolean> authDialog = new Dialog<>();
 	private AuthDialogController controller;
