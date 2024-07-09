@@ -5,11 +5,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
 
-import org.hildan.fxgson.FxGsonBuilder;
+import org.hildan.fxgson.FxGson;
 
-import com.example.exceptions.AuthenticationFailedException;
-import com.example.exceptions.AuthorizationFailedException;
-import com.example.exceptions.InternalServerErrorException;
+import com.example.exceptions.ToDoServiceException;
 import com.google.gson.JsonSyntaxException;
 
 import javafx.beans.property.ListProperty;
@@ -18,34 +16,26 @@ import javafx.collections.FXCollections;
 
 public class ToDoManager {
 	private final String configPath = "./config.json";
-	
 	private final ToDoService service;
-	
-	private ListProperty<ToDo> todos = new SimpleListProperty<>(FXCollections.observableArrayList());
+	private final ListProperty<ToDo> todos = new SimpleListProperty<>(FXCollections.observableArrayList());
 
 	public ListProperty<ToDo> todosProperty() {
 		return todos;
 	}
-	
+
 	public ToDoManager() throws JsonSyntaxException, IOException {
-		var gson = new FxGsonBuilder().create();
+		var gson = FxGson.coreBuilder().create();
 		record Config(String rootEndPoint) {}
 		var config = gson.fromJson(Files.readString(Path.of(configPath)), Config.class);
 		service = new ToDoService(config.rootEndPoint);
 	}
 
-	public void remove(ToDo todo)
-			throws IOException, InterruptedException, InternalServerErrorException,
-			AuthorizationFailedException, AuthenticationFailedException {
-
+	public void remove(ToDo todo) throws ToDoServiceException {
 		service.delete(todo.getId());
 		todos.remove(todo);
 	}
 
-	public void clear() 
-			throws IOException, InterruptedException, InternalServerErrorException,
-			AuthorizationFailedException, AuthenticationFailedException {
-
+	public void clear() throws ToDoServiceException {
 		service.deleteAll();
 		todos.clear();
 	}
@@ -61,16 +51,16 @@ public class ToDoManager {
 				throw new RuntimeException(e);
 			}
 		});
-		
-		todo.dateProperty().addListener((observable, oldValue, newValue) -> { 
+
+		todo.dateProperty().addListener((observable, oldValue, newValue) -> {
 			try {
 				service.updateDate(todo.getId(), newValue);
 			} catch (Exception e) {
 				todo.setDate(oldValue);
-                throw new RuntimeException(e);
-            }
+				throw new RuntimeException(e);
+			}
 		});
-		
+
 		todo.priorityProperty().addListener((observable, oldValue, newValue) -> {
 			try {
 				service.updatePriority(todo.getId(), newValue);
@@ -90,10 +80,7 @@ public class ToDoManager {
 		});
 	}
 
-	public void create(String title, LocalDate date, int priority, boolean completed)
-			throws IOException, InterruptedException, InternalServerErrorException,
-			AuthorizationFailedException, AuthenticationFailedException {
-
+	public void create(String title, LocalDate date, int priority, boolean completed) throws ToDoServiceException {
 		var todo = service.create(title, date, priority, completed);
 		addNewToDo(todo);
 	}
@@ -103,10 +90,7 @@ public class ToDoManager {
 		todos.add(todo);
 	}
 
-	public void loadInitialData()
-			throws IOException, InterruptedException, InternalServerErrorException,
-			AuthorizationFailedException, AuthenticationFailedException {
-
-		service.getAll().forEach(todo -> addNewToDo(todo));	
+	public void loadInitialData() throws ToDoServiceException {
+		service.getAll().forEach(todo -> addNewToDo(todo));
 	}
 }

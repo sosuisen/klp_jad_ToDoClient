@@ -1,13 +1,10 @@
 package com.example;
 
-import java.io.IOException;
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
 
-import com.example.exceptions.AuthenticationFailedException;
-import com.example.exceptions.AuthorizationFailedException;
-import com.example.exceptions.InternalServerErrorException;
+import com.example.exceptions.ToDoServiceException;
 import com.example.model.ToDo;
 import com.example.model.ToDoManager;
 
@@ -35,13 +32,13 @@ public class MainController {
 
 	@FXML
 	private MenuItem menuItemAbout;
-	
+
 	@FXML
 	private MenuItem menuItemClear;
-	
+
 	@FXML
 	private MenuItem menuItemClose;
-	
+
 	@FXML
 	private Button addBtn;
 
@@ -69,24 +66,24 @@ public class MainController {
 
 	private void showError(Exception e) {
 		if (e instanceof RuntimeException) {
-			e = (Exception)e.getCause();
+			e = (Exception) e.getCause();
 		}
+		if (e instanceof ToDoServiceException tdse) {
+			String txt = switch (tdse.getType()) {
+				case ToDoServiceException.Type.IO_ERROR -> "サーバからデータを受信できませんでした。ネットワークを確認してからもう一度お試しください。";
+				case ToDoServiceException.Type.INTERRUPTED_ERROR -> "サーバとの通信が中断されました。しばらく待ってからもう一度お試しください。";
+				case ToDoServiceException.Type.INTERNAL_SERVER_ERROR -> "サーバで問題が発生しました。サーバ管理者にお問い合わせください。";
+				case ToDoServiceException.Type.AUTHENTICATION_ERROR -> "ユーザ名またはパスワードが間違っています。確認した後、メニューの「アカウント設定」へ入力してください。";
+				case ToDoServiceException.Type.AUTHORIZATION_ERROR -> "この操作をする権限がありません。";
+				default -> "予期しないエラーが発生しました。";
+			};
 
-		String txt = switch (e) {
-			case IOException ioe -> "サーバからデータを受信できませんでした。ネットワークを確認してからもう一度お試しください。";
-			case InterruptedException ie -> "サーバとの通信が中断されました。しばらく待ってからもう一度お試しください。";
-			case InternalServerErrorException isee -> "サーバで問題が発生しました。サーバ管理者にお問い合わせください。";
-			case AuthenticationFailedException afe -> "ユーザ名またはパスワードが間違っています。";
-			case AuthorizationFailedException aze -> "この操作をする権限がありません。";
-			default -> "予期しないエラーが発生しました。(" + e.toString()+ ")";
-		};
-		e.printStackTrace();
-		
-		var dialog = new Alert(AlertType.ERROR);
-		dialog.setTitle("エラー");
-		dialog.setHeaderText(null);
-		dialog.setContentText(txt);
-		dialog.showAndWait();
+			var dialog = new Alert(AlertType.ERROR);
+			dialog.setTitle("エラー");
+			dialog.setHeaderText(null);
+			dialog.setContentText(txt);
+			dialog.showAndWait();
+		}
 	}
 
 	private HBox createToDoHBox(ToDo todo) {
@@ -132,12 +129,11 @@ public class MainController {
 		deleteBtn.setOnAction(e -> {
 			try {
 				model.remove(todo);
-			}
-			catch (Exception ex) {
-                   showError(ex);
+			} catch (Exception ex) {
+				showError(ex);
 			}
 		});
-		
+
 		return todoItem;
 	}
 
@@ -177,12 +173,11 @@ public class MainController {
 		menuItemClear.setOnAction(e -> {
 			try {
 				model.clear();
+			} catch (Exception ex) {
+				showError(ex);
 			}
-			catch (Exception ex) {
-                showError(ex);
-            }
-		});		
-		
+		});
+
 		try {
 			model.loadInitialData();
 		} catch (Exception e) {
@@ -192,19 +187,19 @@ public class MainController {
 	}
 
 	private void sortByCompletedAndDate() {
-		FXCollections.sort(todoListVBox.getChildren(), 
-				Comparator.comparing(node -> ((CheckBox)((HBox)node).getChildren().get(0)).isSelected())
-					.thenComparing(node -> ((DatePicker)((HBox)node).getChildren().get(2)).getValue()));
+		FXCollections.sort(todoListVBox.getChildren(),
+				Comparator.comparing(node -> ((CheckBox) ((HBox) node).getChildren().get(0)).isSelected())
+						.thenComparing(node -> ((DatePicker) ((HBox) node).getChildren().get(2)).getValue()));
 	}
 
 	public void initialize() {
 		// Set today
 		headerDatePicker.setValue(LocalDate.now());
-		
-	    headerPriorityChoiceBox.getItems().addAll(1, 2, 3, 4, 5);
-	    headerPriorityChoiceBox.setValue(3);
 
-	    menuItemAbout.setOnAction(e -> showInfo("ToDo App"));		
+		headerPriorityChoiceBox.getItems().addAll(1, 2, 3, 4, 5);
+		headerPriorityChoiceBox.setValue(3);
+
+		menuItemAbout.setOnAction(e -> showInfo("ToDo App"));
 		menuItemClose.setOnAction(e -> Platform.exit());
 	}
 }
