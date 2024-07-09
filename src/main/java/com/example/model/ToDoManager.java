@@ -1,21 +1,14 @@
 package com.example.model;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.LocalDate;
 
-import org.hildan.fxgson.FxGson;
-
 import com.example.exceptions.ToDoServiceException;
-import com.google.gson.JsonSyntaxException;
 
 import javafx.beans.property.ListProperty;
 import javafx.beans.property.SimpleListProperty;
 import javafx.collections.FXCollections;
 
 public class ToDoManager {
-	private final String configPath = "./config.json";
 	private final ToDoService service;
 	private final ListProperty<ToDo> todos = new SimpleListProperty<>(FXCollections.observableArrayList());
 
@@ -23,11 +16,8 @@ public class ToDoManager {
 		return todos;
 	}
 
-	public ToDoManager() throws JsonSyntaxException, IOException {
-		var gson = FxGson.coreBuilder().create();
-		record Config(String rootEndPoint) {}
-		var config = gson.fromJson(Files.readString(Path.of(configPath)), Config.class);
-		service = new ToDoService(config.rootEndPoint);
+	public ToDoManager() {
+		service = new ToDoService(Settings.getInstance().getRootEndPoint());
 	}
 
 	public void remove(ToDo todo) throws ToDoServiceException {

@@ -16,13 +16,13 @@
 	<children>
 		<MenuBar>
 			<menus>
-				<Menu text="File">
+				<Menu fx:id="fileMenu" text="File">
 					<items>
                   		<MenuItem fx:id="menuItemClear" mnemonicParsing="false" text="Clear All ToDos" />
 						<MenuItem fx:id="menuItemClose" text="Close" />
 					</items>
 				</Menu>
-				<Menu text="Help">
+				<Menu fx:id="helpMenu" text="Help">
 					<items>
 						<MenuItem fx:id="menuItemAbout" text="About" />
 					</items>
@@ -35,7 +35,7 @@
 				</Label>
 				<TextField fx:id="headerTitleField" HBox.hgrow="ALWAYS">
 				</TextField>
-				<Label minWidth="-Infinity" styleClass="header-label" text="日付">
+				<Label fx:id="dateLabel" minWidth="-Infinity" styleClass="header-label" text="日付">
 				</Label>
 				<DatePicker fx:id="headerDatePicker" prefWidth="100.0" HBox.hgrow="NEVER">
 				</DatePicker>

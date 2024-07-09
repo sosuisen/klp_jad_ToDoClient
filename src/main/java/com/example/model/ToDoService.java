@@ -25,24 +25,27 @@ import javafx.scene.control.Dialog;
 public class ToDoService {
 	private final String rootEndPoint;
 	private final HttpClient httpClient = HttpClient.newHttpClient();
-	private final Logger logger = Logger.getLogger(ToDoService.class.getName());	
+	private final Logger logger = Logger.getLogger(ToDoService.class.getName());
 	private final Gson gson = FxGson.coreBuilder()
 			.registerTypeAdapter(LocalDate.class, new LocalDateAdapter()) //Gson needed an adapter to convert LocalDate
 			.create();
-	private Dialog<Boolean> authDialog = new Dialog<>();
-	private AuthDialogController controller;
+	private final Dialog<Boolean> authDialog = new Dialog<>();
 
 	// Properties for authDialog
 	public StringProperty userName = new SimpleStringProperty();
 	public StringProperty password = new SimpleStringProperty();
 	public StringProperty authError = new SimpleStringProperty();
 
+	private String getMessage(String key) {
+		return I18n.getInstance().getMessage(key);
+	}
+
 	public ToDoService(String rootEndPoint) {
 		this.rootEndPoint = rootEndPoint;
 
 		// Config authDialog
-		authDialog.setTitle("Your account");
-		authDialog.setHeaderText("Please enter your username and password");
+		authDialog.setTitle(getMessage("authdialog.your_account"));
+		authDialog.setHeaderText(getMessage("authdialog.enter_your_account"));
 		// Buttons
 		authDialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
 		authDialog.setResultConverter(buttonType -> buttonType == ButtonType.OK);
@@ -55,19 +58,19 @@ public class ToDoService {
 		}
 
 		// Initialize controller for auth dialog
-		controller = loader.getController();
+		AuthDialogController controller = loader.getController();
 		controller.initModel(this);
 	}
 
 	private boolean openAuthDialog(int statusCode) {
 		if (statusCode == 401) {
-			authError.set("Invalid username or password");
+			authError.set(getMessage("authdialog.invalid_account"));
 		} else if (statusCode == 403) {
-			authError.set("Access denied");
+			authError.set(getMessage("authdialog.not_permitted"));
 		}
 
 		var result = authDialog.showAndWait();
-		return result.orElse(false);				
+		return result.orElse(false);
 	}
 
 	private String getBasicAuthHeader() {

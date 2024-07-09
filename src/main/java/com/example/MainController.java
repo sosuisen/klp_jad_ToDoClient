@@ -5,6 +5,7 @@ import java.util.Comparator;
 import java.util.List;
 
 import com.example.exceptions.ToDoServiceException;
+import com.example.model.I18n;
 import com.example.model.ToDo;
 import com.example.model.ToDoManager;
 
@@ -21,6 +22,8 @@ import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.DatePicker;
+import javafx.scene.control.Label;
+import javafx.scene.control.Menu;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
@@ -31,6 +34,12 @@ public class MainController {
 	private final String TODO_ID_PREFIX = "todo-";
 
 	@FXML
+	private Menu fileMenu;
+
+	@FXML
+	private Menu helpMenu;
+
+	@FXML
 	private MenuItem menuItemAbout;
 
 	@FXML
@@ -38,6 +47,9 @@ public class MainController {
 
 	@FXML
 	private MenuItem menuItemClose;
+
+	@FXML
+	private Label dateLabel;
 
 	@FXML
 	private Button addBtn;
@@ -56,9 +68,13 @@ public class MainController {
 
 	private ToDoManager model;
 
+	private String getMessage(String key) {
+		return I18n.getInstance().getMessage(key);
+	}
+
 	private void showInfo(String txt) {
 		Alert alert = new Alert(AlertType.INFORMATION);
-		alert.setTitle("アプリの情報");
+		alert.setTitle(getMessage("main.app_info"));
 		alert.setHeaderText(null);
 		alert.setContentText(txt);
 		alert.showAndWait();
@@ -70,16 +86,16 @@ public class MainController {
 		}
 		if (e instanceof ToDoServiceException tdse) {
 			String txt = switch (tdse.getType()) {
-				case ToDoServiceException.Type.IO_ERROR -> "サーバからデータを受信できませんでした。ネットワークを確認してからもう一度お試しください。";
-				case ToDoServiceException.Type.INTERRUPTED_ERROR -> "サーバとの通信が中断されました。しばらく待ってからもう一度お試しください。";
-				case ToDoServiceException.Type.INTERNAL_SERVER_ERROR -> "サーバで問題が発生しました。サーバ管理者にお問い合わせください。";
-				case ToDoServiceException.Type.AUTHENTICATION_ERROR -> "ユーザ名またはパスワードが間違っています。確認した後、メニューの「アカウント設定」へ入力してください。";
-				case ToDoServiceException.Type.AUTHORIZATION_ERROR -> "この操作をする権限がありません。";
-				default -> "予期しないエラーが発生しました。";
+				case ToDoServiceException.Type.IO_ERROR -> getMessage("main.io_error");
+				case ToDoServiceException.Type.INTERRUPTED_ERROR -> getMessage("main.interrupted_error");
+				case ToDoServiceException.Type.INTERNAL_SERVER_ERROR -> getMessage("main.internal_server_error");
+				case ToDoServiceException.Type.AUTHENTICATION_ERROR -> getMessage("main.authentication_error");
+				case ToDoServiceException.Type.AUTHORIZATION_ERROR -> getMessage("main.authorization_error");
+				default -> getMessage("main.unknown_error");
 			};
 
 			var dialog = new Alert(AlertType.ERROR);
-			dialog.setTitle("エラー");
+			dialog.setTitle(getMessage("main.error"));
 			dialog.setHeaderText(null);
 			dialog.setContentText(txt);
 			dialog.showAndWait();
@@ -106,7 +122,7 @@ public class MainController {
 		priorityChoiceBox.setValue(todo.getPriority());
 		HBox.setHgrow(priorityChoiceBox, Priority.NEVER);
 
-		var deleteBtn = new Button("削除");
+		var deleteBtn = new Button(getMessage("main.delete_button"));
 		deleteBtn.getStyleClass().add("todo-delete");
 
 		var todoItem = new HBox(completedCheckBox, titleField, datePicker, priorityChoiceBox, deleteBtn);
@@ -198,8 +214,16 @@ public class MainController {
 
 		headerPriorityChoiceBox.getItems().addAll(1, 2, 3, 4, 5);
 		headerPriorityChoiceBox.setValue(3);
-
-		menuItemAbout.setOnAction(e -> showInfo("ToDo App"));
+		
+		fileMenu.setText(getMessage("main.file_menu"));
+		helpMenu.setText(getMessage("main.help_menu"));
+		menuItemAbout.setOnAction(e -> showInfo(getMessage("main.app_name")));
 		menuItemClose.setOnAction(e -> Platform.exit());
+		
+		addBtn.setText(getMessage("main.add_button"));
+		dateLabel.setText(getMessage("main.date"));
+		menuItemAbout.setText(getMessage("main.about_menu"));
+		menuItemClear.setText(getMessage("main.clear_menu"));
+		menuItemClose.setText(getMessage("main.close_menu"));
 	}
 }
