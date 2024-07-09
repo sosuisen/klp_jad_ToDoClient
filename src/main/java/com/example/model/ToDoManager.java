@@ -9,69 +9,90 @@ import javafx.beans.property.SimpleListProperty;
 import javafx.collections.FXCollections;
 
 public class ToDoManager {
-	private final ToDoService service;
 	private final ListProperty<ToDo> todos = new SimpleListProperty<>(FXCollections.observableArrayList());
 
 	public ListProperty<ToDo> todosProperty() {
 		return todos;
 	}
 
-	public ToDoManager() {
-		service = new ToDoService();
+	private ToDoManager() {
+	}
+
+	private static class SingletonHolder {
+		private static ToDoManager singleton;
+	}
+
+	public static ToDoManager getInstance() {
+		if (SingletonHolder.singleton == null) {
+			SingletonHolder.singleton = new ToDoManager();
+		}
+		return SingletonHolder.singleton;
 	}
 
 	public void remove(ToDo todo) throws ToDoServiceException {
-		service.delete(todo.getId());
+		ToDoService.getInstance().delete(todo.getId());
 		todos.remove(todo);
 	}
 
 	public void clear() throws ToDoServiceException {
-		service.deleteAll();
+		ToDoService.getInstance().deleteAll();
 		todos.clear();
 	}
 
 	private void addListener(ToDo todo) {
 		todo.titleProperty().addListener((observable, oldValue, newValue) -> {
 			try {
-				service.updateTitle(todo.getId(), newValue);
+				ToDoService.getInstance().updateTitle(todo.getId(), newValue);
 			} catch (Exception e) {
-				todo.setTitle(oldValue);
-				// イベントハンドラから投げる例外は、
-				// RuntimeExceptionでラップする必要があります。
-				throw new RuntimeException(e);
+				try {
+					// Reset to the oldValue
+					// This is a workaround because reset binded property is difficult.
+					ToDoManager.getInstance().loadInitialData();
+				} catch (ToDoServiceException ex) {
+					ex.printStackTrace();
+				}
 			}
 		});
 
 		todo.dateProperty().addListener((observable, oldValue, newValue) -> {
 			try {
-				service.updateDate(todo.getId(), newValue);
-			} catch (Exception e) {
-				todo.setDate(oldValue);
-				throw new RuntimeException(e);
+				ToDoService.getInstance().updateDate(todo.getId(), newValue);
+			} catch (Exception e) {				
+				try {
+					ToDoManager.getInstance().loadInitialData();					
+				} catch (ToDoServiceException ex) {
+					ex.printStackTrace();
+				}
 			}
 		});
 
 		todo.priorityProperty().addListener((observable, oldValue, newValue) -> {
 			try {
-				service.updatePriority(todo.getId(), newValue);
+				ToDoService.getInstance().updatePriority(todo.getId(), newValue);
 			} catch (Exception e) {
-				todo.setPriority(oldValue);
-				throw new RuntimeException(e);
+				try {
+					ToDoManager.getInstance().loadInitialData();
+				} catch (ToDoServiceException ex) {
+					ex.printStackTrace();
+				}
 			}
 		});
 
 		todo.completedProperty().addListener((observable, oldValue, newValue) -> {
 			try {
-				service.updateCompleted(todo.getId(), newValue);
+				ToDoService.getInstance().updateCompleted(todo.getId(), newValue);
 			} catch (Exception e) {
-				todo.setCompleted(oldValue);
-				throw new RuntimeException(e);
+				try {
+					ToDoManager.getInstance().loadInitialData();
+				} catch (ToDoServiceException ex) {
+					ex.printStackTrace();
+				}
 			}
 		});
 	}
 
 	public void create(String title, LocalDate date, int priority, boolean completed) throws ToDoServiceException {
-		var todo = service.create(title, date, priority, completed);
+		var todo = ToDoService.getInstance().create(title, date, priority, completed);
 		addNewToDo(todo);
 	}
 
@@ -81,6 +102,7 @@ public class ToDoManager {
 	}
 
 	public void loadInitialData() throws ToDoServiceException {
-		service.getAll().forEach(todo -> addNewToDo(todo));
+		todos.clear();
+		ToDoService.getInstance().getAll().forEach(todo -> addNewToDo(todo));
 	}
 }

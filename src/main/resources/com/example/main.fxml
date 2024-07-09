@@ -18,6 +18,7 @@
 			<menus>
 				<Menu fx:id="fileMenu" text="File">
 					<items>
+                  <MenuItem fx:id="menuItemAccountSettings" mnemonicParsing="false" text="Account Settings" />
                   		<MenuItem fx:id="menuItemClear" mnemonicParsing="false" text="Clear All ToDos" />
 						<MenuItem fx:id="menuItemClose" text="Close" />
 					</items>

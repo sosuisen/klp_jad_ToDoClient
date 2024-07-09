@@ -39,7 +39,7 @@ public class ToDoService {
 		return I18n.getInstance().getMessage(key);
 	}
 
-	public ToDoService() {
+	private ToDoService() {
 		userName.set(Settings.getInstance().getUserName());
 		password.set(Settings.getInstance().getPassword());
 		
@@ -61,12 +61,26 @@ public class ToDoService {
 		AuthDialogController controller = loader.getController();
 		controller.initModel(this);
 	}
+	
+	private static class SingletonHolder {
+		private static ToDoService singleton;
+	}
 
-	private boolean openAuthDialog(int statusCode) {
+	public static ToDoService getInstance() {
+		if (SingletonHolder.singleton == null) {
+			SingletonHolder.singleton = new ToDoService();
+		}
+		return SingletonHolder.singleton;
+	}
+
+	public boolean openAuthDialog(int statusCode) {
 		if (statusCode == 401) {
 			authError.set(getMessage("authdialog.invalid_account"));
 		} else if (statusCode == 403) {
 			authError.set(getMessage("authdialog.not_permitted"));
+		}
+		else {
+			authError.set("");
 		}
 
 		if (userName.get().isEmpty() && password.get().isEmpty()) {

@@ -3,7 +3,6 @@ package com.example;
 import java.io.IOException;
 
 import com.example.model.I18n;
-import com.example.model.ToDoManager;
 
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
@@ -25,8 +24,7 @@ public class MvcApp extends Application {
 			MainController mainController = mainViewLoader.getController();
 
 			// Create and set Model to Controller
-			var model = new ToDoManager();
-			mainController.initModel(model);
+			mainController.initModel();
 
 			// Build scene and stage to show View on the screen
 			var scene = new Scene(root);

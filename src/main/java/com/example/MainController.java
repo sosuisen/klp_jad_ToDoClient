@@ -8,6 +8,7 @@ import com.example.exceptions.ToDoServiceException;
 import com.example.model.I18n;
 import com.example.model.ToDo;
 import com.example.model.ToDoManager;
+import com.example.model.ToDoService;
 
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
@@ -19,6 +20,7 @@ import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.DatePicker;
@@ -41,6 +43,9 @@ public class MainController {
 
 	@FXML
 	private MenuItem menuItemAbout;
+
+	@FXML
+	private MenuItem menuItemAccountSettings;
 
 	@FXML
 	private MenuItem menuItemClear;
@@ -66,8 +71,6 @@ public class MainController {
 	@FXML
 	private ChoiceBox<Integer> headerPriorityChoiceBox;
 
-	private ToDoManager model;
-
 	private String getMessage(String key) {
 		return I18n.getInstance().getMessage(key);
 	}
@@ -81,9 +84,6 @@ public class MainController {
 	}
 
 	private void showError(Exception e) {
-		if (e instanceof RuntimeException) {
-			e = (Exception) e.getCause();
-		}
 		if (e instanceof ToDoServiceException tdse) {
 			String txt = switch (tdse.getType()) {
 				case ToDoServiceException.Type.IO_ERROR -> getMessage("main.io_error");
@@ -144,7 +144,7 @@ public class MainController {
 		// Event Handler
 		deleteBtn.setOnAction(e -> {
 			try {
-				model.remove(todo);
+				ToDoManager.getInstance().remove(todo);
 			} catch (Exception ex) {
 				showError(ex);
 			}
@@ -153,18 +153,13 @@ public class MainController {
 		return todoItem;
 	}
 
-	public void initModel(ToDoManager manager) {
-		if (this.model != null)
-			throw new IllegalStateException("Model can only be initialized once");
-
-		model = manager;
-
+	public void initModel() {
 		ObservableList<Node> todoListItems = todoListVBox.getChildren();
 
 		// Event Handler
 		addBtn.setOnAction(e -> {
 			try {
-				model.create(headerTitleField.getText(), headerDatePicker.getValue(),
+				ToDoManager.getInstance().create(headerTitleField.getText(), headerDatePicker.getValue(),
 						headerPriorityChoiceBox.getValue(), false);
 				headerTitleField.clear();
 			} catch (Exception ex) {
@@ -173,7 +168,7 @@ public class MainController {
 		});
 
 		// Observe Model to update View
-		model.todosProperty().addListener((ListChangeListener<ToDo>) change -> {
+		ToDoManager.getInstance().todosProperty().addListener((ListChangeListener<ToDo>) change -> {
 			while (change.next()) {
 				if (change.wasAdded()) {
 					change.getAddedSubList().forEach(todo -> todoListItems.add(createToDoHBox(todo)));
@@ -187,18 +182,41 @@ public class MainController {
 		});
 
 		menuItemClear.setOnAction(e -> {
-			try {
-				model.clear();
-			} catch (Exception ex) {
-				showError(ex);
-			}
+			Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+			alert.setTitle(getMessage("main.confirm"));
+			alert.setHeaderText("");
+			alert.setContentText(getMessage("main.clear_confirm"));
+			alert.getButtonTypes().setAll(ButtonType.YES, ButtonType.NO);
+			alert.showAndWait().ifPresent(response -> {
+				if (response == ButtonType.YES) {
+					try {
+						ToDoManager.getInstance().clear();
+					} catch (Exception ex) {
+						showError(ex);
+					}
+				}
+			});
 		});
 
+		menuItemAbout.setOnAction(e -> showInfo(getMessage("main.app_name")));
+		menuItemClose.setOnAction(e -> Platform.exit());
+
 		try {
-			model.loadInitialData();
+			ToDoManager.getInstance().loadInitialData();
 		} catch (Exception e) {
 			showError(e);
 		}
+
+		menuItemAccountSettings.setOnAction(e -> {
+			if (ToDoService.getInstance().openAuthDialog(0)) {
+				try {
+					ToDoManager.getInstance().loadInitialData();
+				} catch (ToDoServiceException ex) {
+					showError(ex);
+				}
+			}
+		});
+
 		sortByCompletedAndDate();
 	}
 
@@ -214,15 +232,14 @@ public class MainController {
 
 		headerPriorityChoiceBox.getItems().addAll(1, 2, 3, 4, 5);
 		headerPriorityChoiceBox.setValue(3);
-		
+
 		fileMenu.setText(getMessage("main.file_menu"));
 		helpMenu.setText(getMessage("main.help_menu"));
-		menuItemAbout.setOnAction(e -> showInfo(getMessage("main.app_name")));
-		menuItemClose.setOnAction(e -> Platform.exit());
-		
+
 		addBtn.setText(getMessage("main.add_button"));
 		dateLabel.setText(getMessage("main.date"));
 		menuItemAbout.setText(getMessage("main.about_menu"));
+		menuItemAccountSettings.setText(getMessage("main.account_settings_menu"));
 		menuItemClear.setText(getMessage("main.clear_menu"));
 		menuItemClose.setText(getMessage("main.close_menu"));
 	}
