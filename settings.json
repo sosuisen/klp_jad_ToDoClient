@@ -1,1 +1,6 @@
-{"rootEndPoint":"http://localhost:8080/todo-server/api","language":"ja"}
+{
+  "rootEndPoint": "http://localhost:8080/todo-server/api",
+  "language": "ja",
+  "userName": "user",
+  "password": "5OstvBm2nR2+oHgcJcgOFw\u003d\u003d"
+}

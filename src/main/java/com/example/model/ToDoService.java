@@ -23,7 +23,6 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.control.Dialog;
 
 public class ToDoService {
-	private final String rootEndPoint;
 	private final HttpClient httpClient = HttpClient.newHttpClient();
 	private final Logger logger = Logger.getLogger(ToDoService.class.getName());
 	private final Gson gson = FxGson.coreBuilder()
@@ -40,9 +39,10 @@ public class ToDoService {
 		return I18n.getInstance().getMessage(key);
 	}
 
-	public ToDoService(String rootEndPoint) {
-		this.rootEndPoint = rootEndPoint;
-
+	public ToDoService() {
+		userName.set(Settings.getInstance().getUserName());
+		password.set(Settings.getInstance().getPassword());
+		
 		// Config authDialog
 		authDialog.setTitle(getMessage("authdialog.your_account"));
 		authDialog.setHeaderText(getMessage("authdialog.enter_your_account"));
@@ -69,19 +69,21 @@ public class ToDoService {
 			authError.set(getMessage("authdialog.not_permitted"));
 		}
 
+		if (userName.get().isEmpty() && password.get().isEmpty()) {
+			authError.set("");
+		}
+
 		var result = authDialog.showAndWait();
 		return result.orElse(false);
 	}
 
 	private String getBasicAuthHeader() {
-		logger.info(userName.get() + ":" + password.get());
 		return "Basic " + java.util.Base64.getEncoder()
 				.encodeToString((userName.get() + ":" + password.get()).getBytes());
 	}
 
 	private HttpResponse<String> sendRequest(HttpRequest.Builder builder)
 			throws ToDoServiceException {
-
 		while (true) {
 			var newBuilder = builder.copy();			
 			var req = newBuilder.header("Authorization", getBasicAuthHeader()).build();
@@ -97,9 +99,12 @@ public class ToDoService {
 				throw new ToDoServiceException(ToDoServiceException.Type.INTERRUPTED_ERROR, e);
 			}
 			logger.info("HTTP Response Status Code: " + res.statusCode());
-
+			
 			switch (res.statusCode()) {
 				case 200, 201, 204:
+					Settings.getInstance().setUserName(userName.get());
+				    Settings.getInstance().setPassword(password.get());
+					Settings.getInstance().save();
 					return res;
 				case 401:
 					if (openAuthDialog(res.statusCode()))
@@ -120,7 +125,7 @@ public class ToDoService {
 
 	public List<ToDo> getAll() throws ToDoServiceException {
 		var builder = HttpRequest.newBuilder()
-				.uri(URI.create(rootEndPoint + "/todos"));
+				.uri(URI.create(Settings.getInstance().getRootEndPoint() + "/todos"));
 		HttpResponse<String> res = sendRequest(builder);
 
 		record GetResult(List<ToDo> todos, String error) {}
@@ -137,7 +142,7 @@ public class ToDoService {
 		var json = gson.toJson(new PostParams(title, date, priority, completed));
 
 		var builder = HttpRequest.newBuilder()
-				.uri(URI.create(rootEndPoint + "/todos"))
+				.uri(URI.create(Settings.getInstance().getRootEndPoint() + "/todos"))
 				.header("Content-Type", "application/json")
 				.POST(HttpRequest.BodyPublishers.ofString(json));
 		HttpResponse<String> res = sendRequest(builder);
@@ -153,21 +158,21 @@ public class ToDoService {
 
 	public void delete(int id) throws ToDoServiceException {
 		var builder = HttpRequest.newBuilder()
-				.uri(URI.create(rootEndPoint + "/todos/" + id))
+				.uri(URI.create(Settings.getInstance().getRootEndPoint() + "/todos/" + id))
 				.DELETE();
 		sendRequest(builder);
 	}
 
 	public void deleteAll() throws ToDoServiceException {
 		var builder = HttpRequest.newBuilder()
-				.uri(URI.create(rootEndPoint + "/todos"))
+				.uri(URI.create(Settings.getInstance().getRootEndPoint() + "/todos"))
 				.DELETE();
 		sendRequest(builder);
 	}
 
 	private void updateField(int id, String fieldName, String json) throws ToDoServiceException {
 		var request = HttpRequest.newBuilder()
-				.uri(URI.create(rootEndPoint + "/todos/" + id + "/" + fieldName))
+				.uri(URI.create(Settings.getInstance().getRootEndPoint() + "/todos/" + id + "/" + fieldName))
 				.header("Content-Type", "application/json")
 				.PUT(HttpRequest.BodyPublishers.ofString(json));
 		sendRequest(request);

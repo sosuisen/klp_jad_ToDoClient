@@ -17,7 +17,7 @@ public class ToDoManager {
 	}
 
 	public ToDoManager() {
-		service = new ToDoService(Settings.getInstance().getRootEndPoint());
+		service = new ToDoService();
 	}
 
 	public void remove(ToDo todo) throws ToDoServiceException {
