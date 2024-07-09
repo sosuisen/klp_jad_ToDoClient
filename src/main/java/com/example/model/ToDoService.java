@@ -74,14 +74,17 @@ public class ToDoService {
 	}
 
 	private String getBasicAuthHeader() {
+		logger.info(userName.get() + ":" + password.get());
 		return "Basic " + java.util.Base64.getEncoder()
 				.encodeToString((userName.get() + ":" + password.get()).getBytes());
 	}
 
 	private HttpResponse<String> sendRequest(HttpRequest.Builder builder)
 			throws ToDoServiceException {
+
 		while (true) {
-			var req = builder.header("Authorization", getBasicAuthHeader()).build();
+			var newBuilder = builder.copy();			
+			var req = newBuilder.header("Authorization", getBasicAuthHeader()).build();
 
 			HttpResponse<String> res;
 			try {
@@ -93,6 +96,7 @@ public class ToDoService {
 				logger.severe("sendRequest: " + e.getMessage());
 				throw new ToDoServiceException(ToDoServiceException.Type.INTERRUPTED_ERROR, e);
 			}
+			logger.info("HTTP Response Status Code: " + res.statusCode());
 
 			switch (res.statusCode()) {
 				case 200, 201, 204:

@@ -25,6 +25,7 @@ public class MvcApp extends Application {
 	@Override
 	public void start(Stage stage) {
 		try {
+			// Load settings
 			var gson = FxGson.coreBuilder().create();
 			record SettingsFromFile(String rootEndPoint, String language) {}
 			var settings = gson.fromJson(Files.readString(Path.of(settingsPath)), SettingsFromFile.class);
